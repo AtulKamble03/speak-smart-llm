@@ -44,13 +44,16 @@
 ## Phase 5 — Environment Setup & Testing
 | # | Task | Status | Notes |
 |---|---|---|---|
-| 5.1 | Install Ollama (v0.24.0) | 🔄 In Progress | Downloading via winget — ~52% (1.04 GB / 1.98 GB) |
-| 5.2 | Pull LLM model (llama3 or mistral) | ⬜ Pending | After Ollama install completes |
-| 5.3 | Install Python dependencies | ⬜ Pending | `pip install -r requirements.txt` |
-| 5.4 | Verify Ollama connectivity | ⬜ Pending | Health check on app launch |
-| 5.5 | Test analysis with sample text | ⬜ Pending | End-to-end run |
-| 5.6 | Test history persistence | ⬜ Pending | Save and reload sessions |
-| 5.7 | Test trend charts rendering | ⬜ Pending | Plotly charts display correctly |
+| 5.1 | Install Ollama (v0.24.0) | ✅ Done | Installed via winget |
+| 5.2 | Pull LLM model (llama3) | ✅ Done | 4.7 GB — llama3:latest ready |
+| 5.3 | Install Python dependencies | ✅ Done | All packages installed |
+| 5.4 | Verify Ollama connectivity | ✅ Done | API responding on localhost:11434 |
+| 5.5 | Launch Streamlit app | ✅ Done | Running on localhost:8501 |
+| 5.6 | Fix timeout (60s → 300s) | ✅ Done | config/settings.yaml updated |
+| 5.7 | Add voice mic button | ✅ Done | Web Speech API (Chrome/Edge) |
+| 5.8 | Add RUNBOOK.md | ✅ Done | Start/stop/troubleshoot guide |
+| 5.9 | Test analysis end-to-end | 🔄 In Progress | Testing with sample prompts |
+| 5.10 | Test history & trends tabs | ⬜ Pending | After successful analysis |
 
 ---
 
@@ -78,7 +81,7 @@
 │   ├── analyzer.py      ✅ LLM analysis logic
 │   ├── historian.py     ✅ SQLite history
 │   ├── scorer.py        ✅ Scoring logic
-│   └── app.py           ✅ Streamlit UI — complete
+│   └── app.py           ✅ Streamlit UI + mic button (Web Speech API)
 ├── config/
 │   └── settings.yaml    ✅ All configuration
 ├── data/

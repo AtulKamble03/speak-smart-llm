@@ -4,7 +4,7 @@
 ollama:
   base_url: "http://localhost:11434"
   default_model: "llama3"      # Change to your installed model: llama3, mistral, phi3, gemma, etc.
-  timeout_seconds: 60
+  timeout_seconds: 300
 
 app:
   title: "SpeakSmart — AI Communication Coach"

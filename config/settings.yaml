@@ -1,0 +1,45 @@
+# SpeakSmart Configuration
+# Modify these values to match your local setup
+
+ollama:
+  base_url: "http://localhost:11434"
+  default_model: "llama3"      # Change to your installed model: llama3, mistral, phi3, gemma, etc.
+  timeout_seconds: 60
+
+app:
+  title: "SpeakSmart — AI Communication Coach"
+  port: 8501
+  max_history_display: 20
+
+database:
+  path: "data/history.db"
+
+filler_words:
+  - "uh"
+  - "um"
+  - "like"
+  - "you know"
+  - "basically"
+  - "right"
+  - "so"
+  - "actually"
+  - "literally"
+  - "I mean"
+  - "kind of"
+  - "sort of"
+  - "anyway"
+  - "well"
+  - "okay so"
+
+scoring:
+  weights:
+    filler_penalty: 0.4
+    grammar_penalty: 0.3
+    clarity_bonus: 0.3
+  max_score: 10
+
+grades:
+  A: 9.0
+  B: 7.5
+  C: 6.0
+  D: 4.0

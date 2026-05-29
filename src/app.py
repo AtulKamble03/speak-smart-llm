@@ -1,4 +1,6 @@
 import sys
+import io
+import wave
 from pathlib import Path
 
 import streamlit as st
@@ -11,6 +13,27 @@ from ollama_client import OllamaClient
 from analyzer import CommunicationAnalyzer
 from historian import SessionHistorian
 from scorer import CommunicationScorer
+
+try:
+    from streamlit_mic_recorder import mic_recorder
+    import speech_recognition as sr
+    MIC_AVAILABLE = True
+except ImportError:
+    MIC_AVAILABLE = False
+
+
+def transcribe_audio(audio_data: dict) -> str:
+    recognizer = sr.Recognizer()
+    wav_buffer = io.BytesIO()
+    with wave.open(wav_buffer, "wb") as wf:
+        wf.setnchannels(audio_data["channels"])
+        wf.setsampwidth(audio_data["sample_width"])
+        wf.setframerate(audio_data["sample_rate"])
+        wf.writeframes(audio_data["bytes"])
+    wav_buffer.seek(0)
+    with sr.AudioFile(wav_buffer) as source:
+        audio = recognizer.record(source)
+    return recognizer.recognize_google(audio)
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -118,10 +141,38 @@ with st.sidebar:
 # ── Main area ─────────────────────────────────────────────────────────────────
 
 st.title("🎤 SpeakSmart — AI Communication Coach")
-st.caption("Paste your speech or written text below. The AI will analyze filler words, grammar, and overall communication quality.")
+st.caption("Paste your speech or written text below, or use the microphone to speak directly.")
+
+# ── Voice Input ───────────────────────────────────────────────────────────────
+
+if MIC_AVAILABLE:
+    st.markdown("**Speak your text:**")
+    audio = mic_recorder(
+        start_prompt="🎤  Click to Speak",
+        stop_prompt="⏹  Stop & Transcribe",
+        just_once=True,
+        use_container_width=True,
+        key="voice_input",
+    )
+    if audio:
+        with st.spinner("Transcribing your speech..."):
+            try:
+                transcript = transcribe_audio(audio)
+                st.session_state["voice_transcript"] = transcript
+                st.success("Transcription complete — see text below.")
+            except Exception as e:
+                st.warning(f"Could not transcribe audio: {e}")
+
+    st.markdown("**Or type / paste your text:**")
+else:
+    st.caption("Type or paste your text below:")
+
+# Pre-fill text area with voice transcript if available
+prefill = st.session_state.pop("voice_transcript", "")
 
 text_input = st.text_area(
     "Your text",
+    value=prefill,
     placeholder='Example: "So, uh, basically what I wanted to say is, you know, we should, like, improve our communication skills..."',
     height=160,
     label_visibility="collapsed",

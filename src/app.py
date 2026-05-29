@@ -1,6 +1,4 @@
 import sys
-import io
-import wave
 from pathlib import Path
 
 import streamlit as st
@@ -14,26 +12,79 @@ from analyzer import CommunicationAnalyzer
 from historian import SessionHistorian
 from scorer import CommunicationScorer
 
-try:
-    from streamlit_mic_recorder import mic_recorder
-    import speech_recognition as sr
-    MIC_AVAILABLE = True
-except ImportError:
-    MIC_AVAILABLE = False
+MIC_HTML = """
+<style>
+#mic-btn {
+    background: #2ecc71; color: white; border: none;
+    padding: 12px 24px; border-radius: 8px; font-size: 15px;
+    cursor: pointer; width: 100%; margin-bottom: 6px;
+    transition: background 0.2s;
+}
+#mic-btn.recording { background: #e74c3c; }
+#mic-status { color: #a6adc8; font-size: 13px; text-align: center; }
+</style>
 
+<button id="mic-btn" onclick="toggleRecording()">🎤 Click to Speak</button>
+<div id="mic-status">Click the button and speak. It will stop automatically.</div>
 
-def transcribe_audio(audio_data: dict) -> str:
-    recognizer = sr.Recognizer()
-    wav_buffer = io.BytesIO()
-    with wave.open(wav_buffer, "wb") as wf:
-        wf.setnchannels(audio_data["channels"])
-        wf.setsampwidth(audio_data["sample_width"])
-        wf.setframerate(audio_data["sample_rate"])
-        wf.writeframes(audio_data["bytes"])
-    wav_buffer.seek(0)
-    with sr.AudioFile(wav_buffer) as source:
-        audio = recognizer.record(source)
-    return recognizer.recognize_google(audio)
+<script>
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SpeechRecognition) {
+    document.getElementById('mic-status').innerText = '❌ Browser does not support speech recognition. Use Chrome or Edge.';
+    document.getElementById('mic-btn').disabled = true;
+}
+
+let recognition;
+let isRecording = false;
+
+function toggleRecording() {
+    if (!isRecording) {
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        recognition.onstart = function() {
+            isRecording = true;
+            document.getElementById('mic-btn').innerHTML = '⏹ Stop Recording';
+            document.getElementById('mic-btn').classList.add('recording');
+            document.getElementById('mic-status').innerText = '🔴 Listening... speak now.';
+        };
+
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            document.getElementById('mic-status').innerText = '✅ Transcribed: "' + transcript + '"';
+            setStreamlitTextarea(transcript);
+        };
+
+        recognition.onerror = function(e) {
+            document.getElementById('mic-status').innerText = '❌ Error: ' + e.error;
+        };
+
+        recognition.onend = function() {
+            isRecording = false;
+            document.getElementById('mic-btn').innerHTML = '🎤 Click to Speak';
+            document.getElementById('mic-btn').classList.remove('recording');
+        };
+
+        recognition.start();
+    } else {
+        recognition.stop();
+    }
+}
+
+function setStreamlitTextarea(text) {
+    const doc = window.parent.document;
+    const textareas = doc.querySelectorAll('textarea');
+    if (textareas.length > 0) {
+        const ta = textareas[0];
+        const setter = Object.getOwnPropertyDescriptor(window.parent.HTMLTextAreaElement.prototype, 'value').set;
+        setter.call(ta, text);
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+}
+</script>
+"""
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -145,30 +196,11 @@ st.caption("Paste your speech or written text below, or use the microphone to sp
 
 # ── Voice Input ───────────────────────────────────────────────────────────────
 
-if MIC_AVAILABLE:
-    st.markdown("**Speak your text:**")
-    audio = mic_recorder(
-        start_prompt="🎤  Click to Speak",
-        stop_prompt="⏹  Stop & Transcribe",
-        just_once=True,
-        use_container_width=True,
-        key="voice_input",
-    )
-    if audio:
-        with st.spinner("Transcribing your speech..."):
-            try:
-                transcript = transcribe_audio(audio)
-                st.session_state["voice_transcript"] = transcript
-                st.success("Transcription complete — see text below.")
-            except Exception as e:
-                st.warning(f"Could not transcribe audio: {e}")
+st.markdown("**Speak your text** *(Chrome/Edge only)*")
+st.components.v1.html(MIC_HTML, height=80)
+st.markdown("**Or type / paste your text:**")
 
-    st.markdown("**Or type / paste your text:**")
-else:
-    st.caption("Type or paste your text below:")
-
-# Pre-fill text area with voice transcript if available
-prefill = st.session_state.pop("voice_transcript", "")
+prefill = ""
 
 text_input = st.text_area(
     "Your text",
